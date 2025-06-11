@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write  # This ensures the token can create releases and upload assets
+
 jobs:
   build-and-package:
     runs-on: ubuntu-latest
