@@ -9,13 +9,17 @@ import (
 	"github.com/pezhmankasraee/pksetdev/ioutility"
 )
 
-var pathToConfigFile string
-var isHelp bool
+var (
+	pathToConfigFile string
+	isHelp           bool
+	isVersion        bool
+)
 
 func main() {
 
 	flag.Parse()
 	help.ShowHelp(isHelp)
+	help.ShowVersion(isVersion)
 
 	pklog.CreateLog(pklog.Information, "pksetdev starts ...")
 	pklog.CreateLog(pklog.Information, "Yaml file locations: "+pathToConfigFile)
@@ -30,4 +34,6 @@ func init() {
 	flag.StringVar(&pathToConfigFile, "path", config.PathToDefaultConfigYamlFile, "Path to config file")
 	flag.BoolVar(&isHelp, "h", false, "show this help")
 	flag.BoolVar(&isHelp, "help", false, "show this help")
+	flag.BoolVar(&isVersion, "v", false, "show the version of this application")
+	flag.BoolVar(&isVersion, "version", false, "show the version of this application")
 }
