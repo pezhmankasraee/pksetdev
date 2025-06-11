@@ -18,8 +18,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Delete local tag if exists
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          git tag -d "$TAG_NAME" || true
+
+      - name: Fetch all branches and tags
+        run: |
+          git fetch --all --tags
+
       - name: Install GitHub CLI
         run: sudo apt-get install gh jq
+
+      - name: Authenticate gh CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GITHUB_TOKEN}" | gh auth login --with-token
 
       - name: Check if tag is on a release branch and PR exists
         id: check
@@ -28,31 +42,29 @@ jobs:
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           RELEASE_BRANCH=""
-          # Find all branches containing the tag, filter for release- prefix
           for branch in $(git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'); do
+            echo "DEBUG: Found branch $branch"
             if [[ "$branch" == release-* ]]; then
               RELEASE_BRANCH="$branch"
               break
             fi
           done
-
+          echo "DEBUG: RELEASE_BRANCH is $RELEASE_BRANCH"
           if [[ -z "$RELEASE_BRANCH" ]]; then
             echo "No release- branch contains tag $TAG_NAME. Exiting."
             echo "proceed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          # Check for open PR from this branch to main
           PR_COUNT=$(gh pr list --head "$RELEASE_BRANCH" --base main --state open --json number | jq 'length')
+          echo "DEBUG: PR_COUNT is $PR_COUNT"
           if [[ "$PR_COUNT" -eq 0 ]]; then
             echo "No open PR from $RELEASE_BRANCH to main. Exiting."
             echo "proceed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          # All checks passed
           echo "proceed=true" >> $GITHUB_OUTPUT
           echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+
       - name: Output result
         run: |
           if [[ "${{ steps.check.outputs.proceed }}" != "true" ]]; then
