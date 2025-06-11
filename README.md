@@ -50,6 +50,7 @@ Or using the short option:
 ./pksetdev -p ./path/to/config.yaml
 ```
 
+<<<<<<< HEAD
 ## Git Branching & Release Strategy
 
 1. **main**: Production-ready code. Only updated via pull requests from release or hotfix branches.
@@ -83,6 +84,8 @@ When should you back-merge from main to develop?
     Hotfixes are usually branched from main to fix urgent production issues. Once merged into main, the hotfix should also be merged into develop to ensure ongoing development includes the fix
 
 
+=======
+>>>>>>> 22081c8 (add show version functionality for help)
 ### Additional Information
 
 For more details, documentation, and advanced usage, please visit the [project repository](https://github.com/pezhmankasraee/pksetdev).

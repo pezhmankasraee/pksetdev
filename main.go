@@ -11,16 +11,25 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> 22081c8 (add show version functionality for help)
 var (
 	pathToConfigFile string
 	isHelp           bool
 	isVersion        bool
+<<<<<<< HEAD
 )
 =======
 var pathToConfigFile string
 var isHelp bool
 var isInstall bool
 >>>>>>> c05d5e6 (add downloader)
+=======
+	isInstall bool
+)
+>>>>>>> 22081c8 (add show version functionality for help)
 
 func main() {
 
@@ -46,6 +55,7 @@ func init() {
 	flag.StringVar(&pathToConfigFile, "p", config.PathToDefaultConfigYamlFile, "Path to config file")
 	flag.StringVar(&pathToConfigFile, "path", config.PathToDefaultConfigYamlFile, "Path to config file")
 <<<<<<< HEAD
+<<<<<<< HEAD
 	flag.BoolVar(&isHelp, "h", false, "show this help")
 	flag.BoolVar(&isHelp, "help", false, "show this help")
 	flag.BoolVar(&isVersion, "v", false, "show the version of this application")
@@ -54,4 +64,14 @@ func init() {
 	flag.BoolVar(&isHelp, "h", false, "Show this help")
 	flag.BoolVar(&isHelp, "help", false, "Show this help")
 >>>>>>> c05d5e6 (add downloader)
+=======
+	flag.BoolVar(&isHelp, "h", false, "Show this help")
+	flag.BoolVar(&isHelp, "help", false, "Show this help")
+=======
+	flag.BoolVar(&isHelp, "h", false, "show this help")
+	flag.BoolVar(&isHelp, "help", false, "show this help")
+	flag.BoolVar(&isVersion, "v", false, "show the version of this application")
+	flag.BoolVar(&isVersion, "version", false, "show the version of this application")
+>>>>>>> f2ba19d (add show version functionality for help)
+>>>>>>> 22081c8 (add show version functionality for help)
 }
