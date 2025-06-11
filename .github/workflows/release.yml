@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, windows, darwin]
+        os: [linux, darwin]
         arch: [amd64]
     env:
       APP_NAME: pksetdev
