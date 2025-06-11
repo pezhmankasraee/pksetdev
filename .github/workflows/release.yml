@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64]
+    env:
+      APP_NAME: pksetdev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: './go.mod'   # This tells setup-go to use the version in go.mod[5][3][1]
+
+      - name: Build with Makefile
+        run: |
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make build
+
+      - name: Package as tar.gz
+        run: |
+          tar -czf ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz ${{ env.APP_NAME }}
+
+      - name: Package as zip
+        run: |
+          zip ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip ${{ env.APP_NAME }}
+
+      - name: Upload tar.gz
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          path: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+
+      - name: Upload zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip
+          path: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip
+
+  release:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: ./artifacts/**/*.tar.gz, ./artifacts/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
