@@ -1,9 +1,75 @@
-name: Test
+name: Release
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
-  hello:
+  check-release-conditions:
     runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      release_branch: ${{ steps.check.outputs.release_branch }}
     steps:
-      - run: echo "Hello, world!"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch all branches and tags
+        run: |
+          git fetch --all --tags
+
+      - name: Debug branch search
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "Looking for branches containing tag: $TAG_NAME"
+          git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh jq
+
+      - name: Authenticate gh CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GITHUB_TOKEN}" | gh auth login --with-token
+
+      - name: Check if tag is on a release branch and PR exists
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          RELEASE_BRANCH=""
+          for branch in $(git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'); do
+            echo "DEBUG: Found branch $branch"
+            if [[ "$branch" == release-* ]]; then
+              RELEASE_BRANCH="$branch"
+              break
+            fi
+          done
+          echo "DEBUG: RELEASE_BRANCH is $RELEASE_BRANCH"
+          if [[ -z "$RELEASE_BRANCH" ]]; then
+            echo "No release- branch contains tag $TAG_NAME. Exiting."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          PR_COUNT=$(gh pr list --head "$RELEASE_BRANCH" --base main --state open --json number | jq 'length')
+          echo "DEBUG: PR_COUNT is $PR_COUNT"
+          if [[ "$PR_COUNT" -eq 0 ]]; then
+            echo "No open PR from $RELEASE_BRANCH to main. Exiting."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "proceed=true" >> $GITHUB_OUTPUT
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Output result
+        run: |
+          if [[ "${{ steps.check.outputs.proceed }}" != "true" ]]; then
+            echo "Release workflow skipped: Either the tag is not on a release- branch or there is no open PR from the release branch to main."
+          else
+            echo "Release workflow will proceed."
+          fi
