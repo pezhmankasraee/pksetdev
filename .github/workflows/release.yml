@@ -4,12 +4,42 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  pull_request:
+    types: [closed]
 
 permissions:
   contents: write
 
 jobs:
+  # Job: Automatically create a tag when PR from release-* is merged to main
+  create-tag-on-merge:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.head_ref, 'release-') &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git config
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_HEAD_REF#release-}
+          git fetch --tags
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+
+  # Your existing job: runs when a tag is pushed
   check-release-conditions:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       proceed: ${{ steps.check.outputs.proceed }}
