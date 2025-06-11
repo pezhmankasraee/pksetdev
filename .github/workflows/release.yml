@@ -6,10 +6,57 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: write  # This ensures the token can create releases and upload assets
+  contents: write
 
 jobs:
+  check-release-conditions:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      release_branch: ${{ steps.check.outputs.release_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh jq
+
+      - name: Check if tag is on a release branch and PR exists
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          RELEASE_BRANCH=""
+          # Find all branches containing the tag, filter for release- prefix
+          for branch in $(git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'); do
+            if [[ "$branch" == release-* ]]; then
+              RELEASE_BRANCH="$branch"
+              break
+            fi
+          done
+
+          if [[ -z "$RELEASE_BRANCH" ]]; then
+            echo "No release- branch contains tag $TAG_NAME. Exiting."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check for open PR from this branch to main
+          PR_COUNT=$(gh pr list --head "$RELEASE_BRANCH" --base main --state open --json number | jq 'length')
+          if [[ "$PR_COUNT" -eq 0 ]]; then
+            echo "No open PR from $RELEASE_BRANCH to main. Exiting."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # All checks passed
+          echo "proceed=true" >> $GITHUB_OUTPUT
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+
   build-and-package:
+    needs: check-release-conditions
+    if: needs.check-release-conditions.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,7 +70,7 @@ jobs:
       - name: Set up Go from go.mod
         uses: actions/setup-go@v5
         with:
-          go-version-file: './go.mod'   # This tells setup-go to use the version in go.mod[5][3][1]
+          go-version-file: './go.mod'
 
       - name: Build with Makefile
         run: |
@@ -51,6 +98,7 @@ jobs:
 
   release:
     needs: build-and-package
+    if: needs.check-release-conditions.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
