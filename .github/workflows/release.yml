@@ -18,8 +18,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fetch all branches and tags
+        run: |
+          git fetch --all --tags
+
+      - name: Debug branch search
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "Looking for branches containing tag: $TAG_NAME"
+          git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'
+
       - name: Install GitHub CLI
         run: sudo apt-get install gh jq
+
+      - name: Authenticate gh CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GITHUB_TOKEN}" | gh auth login --with-token
 
       - name: Check if tag is on a release branch and PR exists
         id: check
@@ -28,31 +43,29 @@ jobs:
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           RELEASE_BRANCH=""
-          # Find all branches containing the tag, filter for release- prefix
           for branch in $(git branch -r --contains "refs/tags/$TAG_NAME" | sed 's|origin/||'); do
+            echo "DEBUG: Found branch $branch"
             if [[ "$branch" == release-* ]]; then
               RELEASE_BRANCH="$branch"
               break
             fi
           done
-
+          echo "DEBUG: RELEASE_BRANCH is $RELEASE_BRANCH"
           if [[ -z "$RELEASE_BRANCH" ]]; then
             echo "No release- branch contains tag $TAG_NAME. Exiting."
             echo "proceed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          # Check for open PR from this branch to main
           PR_COUNT=$(gh pr list --head "$RELEASE_BRANCH" --base main --state open --json number | jq 'length')
+          echo "DEBUG: PR_COUNT is $PR_COUNT"
           if [[ "$PR_COUNT" -eq 0 ]]; then
             echo "No open PR from $RELEASE_BRANCH to main. Exiting."
             echo "proceed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          # All checks passed
           echo "proceed=true" >> $GITHUB_OUTPUT
           echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+
       - name: Output result
         run: |
           if [[ "${{ steps.check.outputs.proceed }}" != "true" ]]; then
@@ -60,63 +73,3 @@ jobs:
           else
             echo "Release workflow will proceed."
           fi
-
-  build-and-package:
-    needs: check-release-conditions
-    if: needs.check-release-conditions.outputs.proceed == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, darwin]
-        arch: [amd64]
-    env:
-      APP_NAME: pksetdev
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go from go.mod
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: './go.mod'
-
-      - name: Build with Makefile
-        run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make build
-
-      - name: Package as tar.gz
-        run: |
-          tar -czf ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz ${{ env.APP_NAME }}
-
-      - name: Package as zip
-        run: |
-          zip ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip ${{ env.APP_NAME }}
-
-      - name: Upload tar.gz
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
-          path: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
-
-      - name: Upload zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip
-          path: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}.zip
-
-  release:
-    needs: build-and-package
-    if: needs.check-release-conditions.outputs.proceed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
-
-      - name: Create Draft Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          files: ./artifacts/**/*.tar.gz, ./artifacts/**/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
