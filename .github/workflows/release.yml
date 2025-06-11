@@ -53,6 +53,13 @@ jobs:
           # All checks passed
           echo "proceed=true" >> $GITHUB_OUTPUT
           echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+      - name: Output result
+        run: |
+          if [[ "${{ steps.check.outputs.proceed }}" != "true" ]]; then
+            echo "Release workflow skipped: Either the tag is not on a release- branch or there is no open PR from the release branch to main."
+          else
+            echo "Release workflow will proceed."
+          fi
 
   build-and-package:
     needs: check-release-conditions
