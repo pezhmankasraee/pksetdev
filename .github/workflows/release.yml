@@ -1,15 +1,9 @@
-name: Release
+name: Test
 
-on:
-  push:
-    tags:
-      - 'v*.*.*'
-
-permissions:
-  contents: write
+on: [push]
 
 jobs:
-  example:
+  hello:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hello World"
+      - run: echo "Hello, world!"
