@@ -14,6 +14,8 @@ jobs:
   create_tag:
     if: startsWith(github.head_ref, 'release-')
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set_tag_name.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v3
 
@@ -29,7 +31,12 @@ jobs:
           git tag $VERSION
           git push origin $VERSION
         env:
-          VERSION: ${{ env.VERSION }}
+         VERSION: ${{ env.VERSION }}
+
+      - name: Set tag name output
+        id: set_tag_name
+        run: echo "tag_name=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+
 
   build_and_release:
     name: Build and Draft Release
@@ -68,25 +75,16 @@ jobs:
           git archive --format=tar.gz -o source.tar.gz HEAD
           git archive --format=zip -o source.zip HEAD
 
+  create_draft_release:
+    needs: create_tag
+    runs-on: ubuntu-latest
+    steps:
       - name: Create draft release
-        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.create_tag.outputs.tag }}  # Use the tag created in previous job
-          release_name: Release ${{ needs.create_tag.outputs.tag }}
+          tag_name: ${{ needs.create_tag.outputs.tag_name }}
+          release_name: Release ${{ needs.create_tag.outputs.tag_name }}
           draft: true
           prerelease: false
-
-      - name: Upload Linux tar.gz
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./myapp-linux.tar.gz
-          asset_name: myapp-linux.tar.gz
-          asset_content_type: application/gzip
-
-      # Repeat upload-release-asset for each file (darwin tar.gz, linux zip, darwin zip, source.tar.gz, source.zip)
