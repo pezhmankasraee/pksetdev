@@ -46,20 +46,24 @@ jobs:
           go-version-file: go.mod  # This tells the action to use the Go version in go.mod
 
       - name: Build for Linux
-        run: make build-linux  # Assumes your Makefile has a 'build-linux' target
+        run: |
+          GOOS=linux GOARCH=amd64 make build
 
       - name: Build for MacOS
-        run: make build-darwin  # Assumes your Makefile has a 'build-darwin' target
-
-      - name: Compress binaries (tar.gz)
         run: |
-          tar -czvf myapp-linux.tar.gz ./bin/linux/myapp
-          tar -czvf myapp-darwin.tar.gz ./bin/darwin/myapp
+          GOOS=darwin GOARCH=amd64 make build
 
-      - name: Compress binaries (zip)
+      - name: Rename and compress Linux binary
         run: |
-          zip myapp-linux.zip ./bin/linux/myapp
-          zip myapp-darwin.zip ./bin/darwin/myapp
+          mv pksetdev pksetdev-linux
+          tar -czvf pksetdev-linux.tar.gz pksetdev-linux
+          zip pksetdev-linux.zip pksetdev-linux
+
+      - name: Rename and compress MacOS binary
+        run: |
+          mv pksetdev pksetdev-darwin
+          tar -czvf pksetdev-darwin.tar.gz pksetdev-darwin
+          zip pksetdev-darwin.zip pksetdev-darwin
 
       - name: Compress source code
         run: |
