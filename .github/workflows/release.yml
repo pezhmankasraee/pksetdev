@@ -78,6 +78,8 @@ jobs:
   create_draft_release:
     needs: create_tag
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Create draft release
         uses: actions/create-release@v1
@@ -88,6 +90,11 @@ jobs:
           release_name: ${{ needs.create_tag.outputs.tag_name }}
           draft: true
           prerelease: false
+  upload_assets:
+    needs: create_draft_release
+    runs-on: ubuntu-latest
+    steps:
+       # Download artifacts or checkout code as needed
       - name: Upload Linux tar.gz
         uses: actions/upload-release-asset@v1
         env:
