@@ -47,21 +47,19 @@ jobs:
 
       - name: Build for Linux
         run: |
-          GOOS=linux GOARCH=amd64 make build
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pezhmankasraee/pksetdev/help.Version=$(git describe --tags --dirty --always)'" -o pksetdev-linux
 
-      - name: Build for MacOS
+      - name: Compress Linux binary
         run: |
-          GOOS=darwin GOARCH=amd64 make build
-
-      - name: Rename and compress Linux binary
-        run: |
-          mv pksetdev pksetdev-linux
           tar -czvf pksetdev-linux.tar.gz pksetdev-linux
           zip pksetdev-linux.zip pksetdev-linux
 
-      - name: Rename and compress MacOS binary
+      - name: Build for MacOS
         run: |
-          mv pksetdev pksetdev-darwin
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X 'github.com/pezhmankasraee/pksetdev/help.Version=$(git describe --tags --dirty --always)'" -o pksetdev-darwin
+
+      - name: Compress MacOS binary
+        run: |
           tar -czvf pksetdev-darwin.tar.gz pksetdev-darwin
           zip pksetdev-darwin.zip pksetdev-darwin
 
