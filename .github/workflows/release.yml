@@ -133,7 +133,7 @@ jobs:
 
 
   upload_assets:
-    needs: create_draft_release
+    needs: [build_and_release, create_draft_release]
     runs-on: ubuntu-latest
     steps:
       - name: Download Linux tar.gz artifact
