@@ -61,6 +61,18 @@ jobs:
           tar -czvf pksetdev-linux.tar.gz pksetdev-linux
           zip pksetdev-linux.zip pksetdev-linux
 
+      - name: Upload Linux tar.gz as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pksetdev-linux-tar
+          path: ./pksetdev-linux.tar.gz
+
+      - name: Upload Linux zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pksetdev-linux-zip
+          path: ./pksetdev-linux.zip
+
       - name: Build for MacOS
         run: |
           GOOS=darwin GOARCH=amd64 go build -ldflags "-X 'github.com/pezhmankasraee/pksetdev/help.Version=$(git describe --tags --dirty --always)'" -o pksetdev-darwin
@@ -69,11 +81,37 @@ jobs:
         run: |
           tar -czvf pksetdev-darwin.tar.gz pksetdev-darwin
           zip pksetdev-darwin.zip pksetdev-darwin
+    
+      - name: Upload Darwin tar.gz as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pksetdev-darwin-tar
+          path: ./pksetdev-darwin.tar.gz
+
+      - name: Upload Darwin zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pksetdev-darwin-zip
+          path: ./pksetdev-darwin.zip
 
       - name: Compress source code
         run: |
           git archive --format=tar.gz -o source.tar.gz HEAD
           git archive --format=zip -o source.zip HEAD
+
+      - name: Upload source tar.gz as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-tar
+          path: ./source.tar.gz
+
+      - name: Upload source zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-zip
+          path: ./source.zip
+
+      
 
 
   create_draft_release:
@@ -98,6 +136,36 @@ jobs:
     needs: create_draft_release
     runs-on: ubuntu-latest
     steps:
+      - name: Download Linux tar.gz artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pksetdev-linux-tar
+
+      - name: Download Linux zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pksetdev-linux-zip
+
+      - name: Download Darwin tar.gz artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pksetdev-darwin-tar
+
+      - name: Download Darwin zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pksetdev-darwin-zip
+
+      - name: Download source tar.gz artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: source-tar
+
+      - name: Download source zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: source-zip
+
        # Download artifacts or checkout code as needed
       - name: Upload Linux tar.gz
         uses: actions/upload-release-asset@v1
