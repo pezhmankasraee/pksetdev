@@ -115,34 +115,25 @@ jobs:
     needs: create_tag
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.set_upload_url.outputs.upload_url }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - name: Create draft release
+      - name: Create draft release and get upload_url
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.create_tag.outputs.tag_name }}
         run: |
-            gh release create "$TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "$TAG" \
-              --notes "Draft release for $TAG" \
-              --draft
-            # Get the upload_url for the created release
-            upload_url=$(gh api repos/${GITHUB_REPOSITORY}/releases/tags/$TAG --jq .upload_url)
-            echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
+          gh release create "$TAG" --title "$TAG" --notes "Draft release for $TAG" --draft
+          sleep 5
+          upload_url=$(gh release view "$TAG" --json uploadUrl -q .uploadUrl)
+          echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
 
-      - name: Set upload_url output
-        id: set_upload_url
-        run: |
-          echo "upload_url=$(gh api repos/${GITHUB_REPOSITORY}/releases/tags/${{ needs.create_tag.outputs.tag_name }} --jq .upload_url)" >> $GITHUB_OUTPUT
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload_assets:
     needs: [build_and_release, create_draft_release]
     runs-on: ubuntu-latest
     steps:
+      # Download artifacts produced in build_and_release
       - name: Download Linux tar.gz artifact
         uses: actions/download-artifact@v4
         with:
@@ -173,7 +164,7 @@ jobs:
         with:
           name: source-zip
 
-       # Download artifacts or checkout code as needed
+      # Upload assets to the draft release using the upload_url from create_draft_release
       - name: Upload Linux tar.gz
         uses: actions/upload-release-asset@v1
         env:
