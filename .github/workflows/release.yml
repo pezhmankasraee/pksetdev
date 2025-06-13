@@ -138,6 +138,9 @@ jobs:
     needs: [build_and_release, create_draft_release]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       # Download artifacts produced in build_and_release
       - name: Download Linux tar.gz artifact
         uses: actions/download-artifact@v4
@@ -205,4 +208,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
-          
