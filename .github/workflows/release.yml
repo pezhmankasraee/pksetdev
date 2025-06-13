@@ -3,12 +3,14 @@ name: Release Tag
 permissions:
   contents: write
 
+
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
       - main
       - master
+
 
 jobs:
   create_tag:
@@ -17,7 +19,7 @@ jobs:
     outputs:
       tag_name: ${{ steps.set_tag_name.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Extract version
         id: extract_version
@@ -111,31 +113,38 @@ jobs:
           name: source-zip
           path: ./source.zip
 
-      
-
 
   create_draft_release:
     needs: create_tag
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.create_release.outputs.tag_name }}
     steps:
-      - name: Create draft release
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create draft release and get upload_url
         id: create_release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ needs.create_tag.outputs.tag_name }}
-          release_name: ${{ needs.create_tag.outputs.tag_name }}
-          draft: true
-          prerelease: false
+          TAG: ${{ needs.create_tag.outputs.tag_name }}
+        run: |
+          gh release create "$TAG" --title "$TAG" --notes "Draft release for $TAG" --draft
+          sleep 5
+          upload_url=$(gh release view "$TAG" --json uploadUrl -q .uploadUrl)
+          echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
 
 
   upload_assets:
     needs: [build_and_release, create_draft_release]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Download artifacts produced in build_and_release
       - name: Download Linux tar.gz artifact
         uses: actions/download-artifact@v4
         with:
@@ -166,58 +175,39 @@ jobs:
         with:
           name: source-zip
 
-       # Download artifacts or checkout code as needed
-      - name: Upload Linux tar.gz
-        uses: actions/upload-release-asset@v1
+      # Upload assets to the draft release using the upload_url from create_draft_release
+      - name: Upload Linux tar.gz with gh CLI
+        run: gh release upload "$TAG_NAME" ./pksetdev-linux.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./pksetdev-linux.tar.gz
-          asset_name: pksetdev-linux.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload Linux zip
-        uses: actions/upload-release-asset@v1
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
+ 
+      - name: Upload Linux zip with gh CLI
+        run: gh release upload "$TAG_NAME" ./pksetdev-linux.zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./pksetdev-linux.zip
-          asset_name: pksetdev-linux.zip
-          asset_content_type: application/zip
-      - name: Upload MacOS tar.gz
-        uses: actions/upload-release-asset@v1
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
+ 
+      - name: Upload MacOS tar.gz with gh CLI
+        run: gh release upload "$TAG_NAME" ./pksetdev-darwin.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./pksetdev-darwin.tar.gz
-          asset_name: pksetdev-darwin.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload MacOS zip
-        uses: actions/upload-release-asset@v1
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
+
+      - name: Upload MacOS zip with gh CLI
+        run: gh release upload "$TAG_NAME" ./pksetdev-darwin.zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./pksetdev-darwin.zip
-          asset_name: pksetdev-darwin.zip
-          asset_content_type: application/zip
-      - name: Upload source tar.gz
-        uses: actions/upload-release-asset@v1
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
+
+      - name: Upload source tar.gz with gh CLI
+        run: gh release upload "$TAG_NAME" ./source.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./source.tar.gz
-          asset_name: source.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload source zip
-        uses: actions/upload-release-asset@v1
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
+
+      - name: Upload source zip with gh CLI
+        run: gh release upload "$TAG_NAME" ./source.zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_draft_release.outputs.upload_url }}
-          asset_path: ./source.zip
-          asset_name: source.zip
-          asset_content_type: application/zip
+          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
