@@ -18,6 +18,7 @@ func generalHelp() {
 	fmt.Println("Usage: pksetdev [OPTIONS]")
 	fmt.Println("")
 	fmt.Println("Options:")
+	fmt.Println("  -i, --install       Download and install the applications")
 	fmt.Println("  -p, --path PATH     Path to yaml config file")
 	fmt.Println("  -h, --help          Show this help message")
 	fmt.Println("  -v, --Version       Show the version of the application")
