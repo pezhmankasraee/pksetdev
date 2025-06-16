@@ -7,13 +7,20 @@ import (
 	"github.com/pezhmankasraee/pksetdev/config"
 	"github.com/pezhmankasraee/pksetdev/help"
 	"github.com/pezhmankasraee/pksetdev/ioutility"
+	pkgmanagement "github.com/pezhmankasraee/pksetdev/pkgManagement"
 )
 
+<<<<<<< HEAD
 var (
 	pathToConfigFile string
 	isHelp           bool
 	isVersion        bool
 )
+=======
+var pathToConfigFile string
+var isHelp bool
+var isInstall bool
+>>>>>>> c05d5e6 (add downloader)
 
 func main() {
 
@@ -26,14 +33,25 @@ func main() {
 
 	yamlFile := ioutility.ReadYamlFile(pathToConfigFile)
 
-	pklog.CreateLog(pklog.Information, "basepath: "+yamlFile.BasePath)
+	pklog.CreateLog(pklog.Information, "base path in yaml: "+yamlFile.BasePath)
+
+	ioutility.CheckPathExist(yamlFile.BasePath)
+
+	pkgmanagement.InstallApplications(yamlFile, isInstall)
 }
 
 func init() {
+	flag.BoolVar(&isInstall, "i", false, "Download and install the applications")
+	flag.BoolVar(&isInstall, "install", false, "Download and install the applications")
 	flag.StringVar(&pathToConfigFile, "p", config.PathToDefaultConfigYamlFile, "Path to config file")
 	flag.StringVar(&pathToConfigFile, "path", config.PathToDefaultConfigYamlFile, "Path to config file")
+<<<<<<< HEAD
 	flag.BoolVar(&isHelp, "h", false, "show this help")
 	flag.BoolVar(&isHelp, "help", false, "show this help")
 	flag.BoolVar(&isVersion, "v", false, "show the version of this application")
 	flag.BoolVar(&isVersion, "version", false, "show the version of this application")
+=======
+	flag.BoolVar(&isHelp, "h", false, "Show this help")
+	flag.BoolVar(&isHelp, "help", false, "Show this help")
+>>>>>>> c05d5e6 (add downloader)
 }
