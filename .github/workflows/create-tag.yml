@@ -1,0 +1,71 @@
+name: Create Release Tag
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'release-v*'  # Matches release-v1.2.3, release-v2.0.0, etc.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag'
+        required: false
+        default: ''
+
+jobs:
+  create_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print event type
+        run: |
+          echo "Event: ${{ github.event_name }}"
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Manual trigger: using version input '$VERSION'"
+          else
+            VERSION=$(echo "${GITHUB_REF#refs/heads/release-v}")
+            echo "Push trigger: using version from branch '$VERSION'"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
+
+      - name: Print version
+        run: echo "Extracted version is $VERSION"
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Check if tag exists
+        run: |
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists. Exiting."
+            exit 1
+          fi
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Create tag
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+        env:
+          VERSION: ${{ env.VERSION }}
+      
+      - name: Tag summary
+        run: echo "Created tag v$VERSION for version $VERSION"
+        env:
+          VERSION: ${{ env.VERSION }}
