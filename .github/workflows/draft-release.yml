@@ -1,4 +1,4 @@
-name: Release Tag
+name: Build and Draft Release
 
 permissions:
   contents: write
@@ -13,47 +13,59 @@ on:
 
 
 jobs:
-  create_tag:
-    if: startsWith(github.head_ref, 'release-')
+  build_and_release:
+    if: startsWith(github.head_ref, 'release-v')
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.set_tag_name.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Extract version
-        id: extract_version
-        run: echo "VERSION=$(echo ${GITHUB_HEAD_REF#release-})" >> $GITHUB_ENV
-
-      - name: Create tag
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git fetch --all
-          git tag -a $VERSION -m "Release $VERSION"
-          git push origin $VERSION
-        env:
-         VERSION: ${{ env.VERSION }}
-
-      - name: Set tag name output
-        id: set_tag_name
-        run: echo "tag_name=${{ env.VERSION }}" >> $GITHUB_OUTPUT
-
-
-  build_and_release:
-    name: Build and Draft Release
-    needs: create_tag  # This makes sure this job runs after create_tag finishes
-    runs-on: ubuntu-latest
-
+      tag: ${{ steps.get_tag.outputs.tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          VERSION=$(echo "${GITHUB_REF#refs/heads/release-v}")
+          echo "VERSION=v$VERSION" >> $GITHUB_ENV
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine branch name
+        id: branch_name
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Checkout release branch tip
+        run: |
+          git fetch origin ${{ steps.branch_name.outputs.branch }}
+          git checkout ${{ steps.branch_name.outputs.branch }}
+
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          TAG=$(git tag --points-at HEAD | head -n 1)
+          if [ -z "$TAG" ]; then
+            echo "No tag found, using commit hash."
+            exit 1
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Print tag
+        run: echo "Tag is ${{ steps.get_tag.outputs.tag }}"
 
       - name: Set up Go (read version from go.mod)
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod  # This tells the action to use the Go version in go.mod
 
+      ## build and compress packages
       - name: Build for Linux
         run: |
           GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pezhmankasraee/pksetdev/help.Version=$(git describe --tags --dirty --always)'" -o pksetdev-linux
@@ -83,7 +95,7 @@ jobs:
         run: |
           tar -czvf pksetdev-darwin.tar.gz pksetdev-darwin
           zip pksetdev-darwin.zip pksetdev-darwin
-    
+
       - name: Upload Darwin tar.gz as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -115,7 +127,7 @@ jobs:
 
 
   create_draft_release:
-    needs: create_tag
+    needs: build_and_release
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -128,8 +140,9 @@ jobs:
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.create_tag.outputs.tag_name }}
+          TAG: ${{ needs.build_and_release.outputs.tag }}
         run: |
+          echo "TAG: $TAG"
           gh release create "$TAG" --title "$TAG" --notes "Draft release for $TAG" --draft
           sleep 5
           upload_url=$(gh release view "$TAG" --json uploadUrl -q .uploadUrl)
@@ -140,9 +153,15 @@ jobs:
   upload_assets:
     needs: [build_and_release, create_draft_release]
     runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ needs.build_and_release.outputs.tag }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Print tag in upload_assets
+        run: echo "Tag is $TAG_NAME"
 
       # Download artifacts produced in build_and_release
       - name: Download Linux tar.gz artifact
@@ -178,36 +197,18 @@ jobs:
       # Upload assets to the draft release using the upload_url from create_draft_release
       - name: Upload Linux tar.gz with gh CLI
         run: gh release upload "$TAG_NAME" ./pksetdev-linux.tar.gz --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
  
       - name: Upload Linux zip with gh CLI
         run: gh release upload "$TAG_NAME" ./pksetdev-linux.zip --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
- 
+
       - name: Upload MacOS tar.gz with gh CLI
         run: gh release upload "$TAG_NAME" ./pksetdev-darwin.tar.gz --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
 
       - name: Upload MacOS zip with gh CLI
         run: gh release upload "$TAG_NAME" ./pksetdev-darwin.zip --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
 
       - name: Upload source tar.gz with gh CLI
         run: gh release upload "$TAG_NAME" ./source.tar.gz --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
 
       - name: Upload source zip with gh CLI
         run: gh release upload "$TAG_NAME" ./source.zip --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.create_draft_release.outputs.tag_name }}
