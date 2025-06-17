@@ -54,7 +54,7 @@ Or using the short option:
 
 1. **main**: Production-ready code. Only updated via pull requests from release or hotfix branches.
 2. **develop**: Integration branch for features. All feature branches are merged here.
-3. **release-x.y.z**: Created from `develop` when preparing a new release.
+3. **release-vM.m.p**: Created from `develop` when preparing a new release.
    - Final fixes, version bumps, and documentation updates are made here.
    - Pull request from `release-vM.m.p` to `main` for final review.
    - When the PR is created the release action will be triggered, then the action will create a tag based on postfix in release branch name, and then create a draft release.
@@ -65,9 +65,9 @@ Or using the short option:
 **Release Steps:**
 1. Branch from `develop` to `release-vM.m.p`
 2. Finalize release (fixes, docs, version bump)
-3. Release action/pipeline create and push the tag `vM.m.p` (it takes it from release branch name)
-4. CI creates draft release
-5. PR from `release-vM.m.p` to `main`
+3. Push the branch `release-vM.m.p`
+4. The push will trigger the `create-tag` workflow/actin, and it will create the tag with version `vM.m.p` which points to the head of of `release-vM.m.p` branch
+5. Create PR from `release-vM.m.p` to `main`, creating PR will trigger `draft-release` workflow/action and it creates draft release
 6. Merge release to `main` (and back to `develop` if needed)
 7. Review and publish draft release
 
