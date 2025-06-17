@@ -29,10 +29,27 @@ jobs:
           echo "VERSION=v$VERSION" >> $GITHUB_ENV
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Determine branch name
+        id: branch_name
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Checkout release branch tip
+        run: |
+          git fetch origin ${{ steps.branch_name.outputs.branch }}
+          git checkout ${{ steps.branch_name.outputs.branch }}
+
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
       - name: Get latest tag
         id: get_tag
         run: |
-          git fetch --tags
           TAG=$(git tag --points-at HEAD | head -n 1)
           if [ -z "$TAG" ]; then
             echo "No tag found, using commit hash."
