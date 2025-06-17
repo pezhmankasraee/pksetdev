@@ -20,24 +20,27 @@ jobs:
       tag_name: ${{ steps.set_tag_name.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract version
         id: extract_version
-        run: echo "VERSION=$(echo ${GITHUB_HEAD_REF#release-})" >> $GITHUB_ENV
+        run: |
+          VERSION=$(echo "${GITHUB_REF#refs/heads/release-}")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create tag
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git fetch --all
           git tag -a $VERSION -m "Release $VERSION"
           git push origin $VERSION
         env:
-         VERSION: ${{ env.VERSION }}
+          VERSION: ${{ env.VERSION }}
 
       - name: Set tag name output
         id: set_tag_name
-        run: echo "tag_name=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+        run: echo "tag_name=VERSION" >> $GITHUB_OUTPUT
 
 
   build_and_release:
