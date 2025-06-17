@@ -26,7 +26,11 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          TAG=$(git describe --tags --abbrev=0)
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            echo "No tag found, using commit hash."
+            TAG=$(git rev-parse --short HEAD)
+          fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Print tag
