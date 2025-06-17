@@ -40,7 +40,7 @@ jobs:
 
       - name: Set tag name output
         id: set_tag_name
-        run: echo "tag_name=VERSION" >> $GITHUB_OUTPUT
+        run: echo "tag_name=$VERSION" >> $GITHUB_OUTPUT
 
 
   build_and_release:
