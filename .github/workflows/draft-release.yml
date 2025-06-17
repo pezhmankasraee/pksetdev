@@ -33,10 +33,10 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          TAG=$(git tag --points-at HEAD | head -n 1)
           if [ -z "$TAG" ]; then
             echo "No tag found, using commit hash."
-            TAG=$(git rev-parse --short HEAD)
+            exit 1
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
