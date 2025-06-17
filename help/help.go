@@ -35,6 +35,6 @@ func ShowVersion(isVersion bool) {
 	if isVersion {
 		fmt.Println("pksetdev " + Version)
 		fmt.Println("Written by Pezhman Kasraee <github@pezhmankasraee.com>")
+		os.Exit(0)
 	}
-	os.Exit(0)
 }
