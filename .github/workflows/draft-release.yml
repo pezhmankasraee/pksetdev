@@ -125,6 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.build_and_release.outputs.tag }}
         run: |
+          echo "TAG: $TAG"
           gh release create "$TAG" --title "$TAG" --notes "Draft release for $TAG" --draft
           sleep 5
           upload_url=$(gh release view "$TAG" --json uploadUrl -q .uploadUrl)
