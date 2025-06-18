@@ -18,7 +18,7 @@ $ make
 
 ## Flags
 
-Certainly! Here’s a clear and user-friendly way to elaborate and present the help section for **pksetdev** in your `README.md`, making it informative and easy to follow:
+This is the flag definitions:
 
 ---
 
@@ -32,7 +32,8 @@ pksetdev [OPTIONS]
 
 | Option                            | Description                       |
 |-----------------------------------|-----------------------------------|
-| `-p`, `--path PATH`               | Path to the YAML config file. This file should define device settings and parameters. `Example: ./config/config.yaml` configuration file.    |
+| `-i`, `--install`               | Download the applications and install 
+| `-p PATH`, `--path PATH`               | Path to the YAML config file. This file should define device settings and parameters. `Example: ./config/config.yaml` configuration file.    |
 | `-h`, `--help`                    | Display help information about the command and its options. |
 | `-v`, `--Version`                 | Show the current version of the application. |
 
