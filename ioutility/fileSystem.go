@@ -2,6 +2,7 @@ package ioutility
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/pezhmankasraee/pklog/v2"
 )
@@ -28,4 +29,23 @@ func CheckPathExist(path string) {
 	} else {
 		pklog.CreateLog(pklog.Information, "base path exists")
 	}
+}
+
+// readFile opens the file at the given path and returns it.
+// The caller is responsible for closing the returned file.
+func readFile(pathToFile string) (file *os.File, e error) {
+	file, err := os.Open(pathToFile)
+	if err != nil {
+		pklog.CreateLog(pklog.Error, "file cannot be open: "+err.Error())
+		return nil, err
+	}
+	return file, nil
+}
+
+func splitPath(fullPath string) (directory string, filename string) {
+
+	dir := filepath.Dir(fullPath)
+	file := filepath.Base(fullPath)
+
+	return dir, file
 }

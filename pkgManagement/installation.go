@@ -35,4 +35,21 @@ func install(application *model.Application, basePath string) {
 	}
 	net.Download(application, applicationBasePath)
 
+	destination := applicationBasePath + "/" + application.Filename
+
+	if strings.HasSuffix(application.Filename, ".tar.gz") {
+		pklog.CreateLog(pklog.Information, "extracting .tar.gz: "+destination)
+		if errr := ioutility.ExtractTarGz(destination); errr != nil {
+			pklog.CreateLog(pklog.FatalError, fmt.Sprintf(".tar.gz file: %s", errr.Error()))
+		}
+		pklog.CreateLog(pklog.Information, "extracted successfully.")
+	} else if strings.HasSuffix(application.Filename, ".zip") {
+		pklog.CreateLog(pklog.Information, "extracting .zip: "+destination)
+		if errr := ioutility.ExtractZip(destination); errr != nil {
+			pklog.CreateLog(pklog.FatalError, fmt.Sprintf(".zip file: %s", errr.Error()))
+		}
+		pklog.CreateLog(pklog.Information, "extracted successfully.")
+	} else {
+		pklog.CreateLog(pklog.FatalError, "unrecognizable compressed file")
+	}
 }
