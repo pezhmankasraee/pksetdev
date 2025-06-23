@@ -13,6 +13,8 @@ import (
 	"github.com/pezhmankasraee/pklog/v2"
 )
 
+const progressDot string = ". "
+
 func ExtractZip(pathToZipFile string) error {
 
 	directory, _ := splitPath(pathToZipFile)
@@ -65,7 +67,7 @@ func ExtractZip(pathToZipFile string) error {
 		}
 
 		if counter%50 == 0 {
-			fmt.Print(".")
+			fmt.Print(progressDot)
 		}
 		counter++
 	}
@@ -80,20 +82,20 @@ func ExtractTarGz(pathToTarGzFile string) error {
 
 	tarGzFile, err := readFile(pathToTarGzFile)
 	if err != nil {
-		pklog.CreateLog(pklog.Error, "cannot uncompressed the file: "+err.Error())
+		pklog.CreateLog(pklog.Error, fmt.Sprintf("cannot uncompressed the file: %s", err.Error()))
 		return err
 	}
 	defer tarGzFile.Close()
 
 	uncompressedStreamTarGz, err := gzip.NewReader(tarGzFile)
 	if err != nil {
-		pklog.CreateLog(pklog.Error, "tar.gz file cannot be extracted: "+err.Error())
+		pklog.CreateLog(pklog.Error, fmt.Sprintf("tar.gz file cannot be extracted: %s", err.Error()))
 		return err
 	}
 	defer uncompressedStreamTarGz.Close()
 
 	if err1 := extractTarFile(uncompressedStreamTarGz, directory); err1 != nil {
-		pklog.CreateLog(pklog.Error, "tar.gz file cannot be extracted: "+err1.Error())
+		pklog.CreateLog(pklog.Error, fmt.Sprintf("tar.gz file cannot be extracted: %s", err1.Error()))
 		return err1
 	}
 	return nil
@@ -120,7 +122,7 @@ func extractTarFile(uncompressedStreamTarGz *gzip.Reader, destination string) er
 		}
 
 		if counter%50 == 0 {
-			fmt.Print(". ")
+			fmt.Print(progressDot)
 		}
 		counter++
 

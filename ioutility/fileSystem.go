@@ -1,6 +1,7 @@
 package ioutility
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -17,7 +18,7 @@ func MakeDirectory(path string) {
 	if err != nil {
 		pklog.CreateLog(pklog.FatalError, err.Error())
 	}
-	pklog.CreateLog(pklog.Information, "path to "+path+" was created successfully")
+	pklog.CreateLog(pklog.Information, fmt.Sprintf("path to %s was created successfully", path))
 }
 
 func CheckPathExist(path string) {
@@ -36,7 +37,7 @@ func CheckPathExist(path string) {
 func readFile(pathToFile string) (file *os.File, e error) {
 	file, err := os.Open(pathToFile)
 	if err != nil {
-		pklog.CreateLog(pklog.Error, "file cannot be open: "+err.Error())
+		pklog.CreateLog(pklog.Error, fmt.Sprintf("file cannot be open: %s", err.Error()))
 		return nil, err
 	}
 	return file, nil
