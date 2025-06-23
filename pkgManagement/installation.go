@@ -35,21 +35,29 @@ func install(application *model.Application, basePath string) {
 	}
 	net.Download(application, applicationBasePath)
 
+	if err := uncompressFiles(application, applicationBasePath); err != nil {
+		pklog.CreateLog(pklog.FatalError, err.Error())
+	}
+}
+
+func uncompressFiles(application *model.Application, applicationBasePath string) error {
 	destination := applicationBasePath + "/" + application.Filename
 
 	if strings.HasSuffix(application.Filename, ".tar.gz") {
 		pklog.CreateLog(pklog.Information, "extracting .tar.gz: "+destination)
-		if errr := ioutility.ExtractTarGz(destination); errr != nil {
-			pklog.CreateLog(pklog.FatalError, fmt.Sprintf(".tar.gz file: %s", errr.Error()))
+		if err := ioutility.ExtractTarGz(destination); err != nil {
+			return fmt.Errorf(".tar.gz file: %s", err.Error())
 		}
 		pklog.CreateLog(pklog.Information, "extracted successfully.")
 	} else if strings.HasSuffix(application.Filename, ".zip") {
 		pklog.CreateLog(pklog.Information, "extracting .zip: "+destination)
-		if errr := ioutility.ExtractZip(destination); errr != nil {
-			pklog.CreateLog(pklog.FatalError, fmt.Sprintf(".zip file: %s", errr.Error()))
+		if err := ioutility.ExtractZip(destination); err != nil {
+			return fmt.Errorf(".zip file: %s", err.Error())
 		}
 		pklog.CreateLog(pklog.Information, "extracted successfully.")
 	} else {
-		pklog.CreateLog(pklog.FatalError, "unrecognizable compressed file")
+		return fmt.Errorf("unrecognizable compressed file")
 	}
+
+	return nil
 }
