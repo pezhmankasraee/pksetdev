@@ -69,16 +69,16 @@ func verifyDownload(filePath string, application *model.Application) {
 	checksumString := fmt.Sprintf("%x", checksum)
 	isEqual := isHashEqual(checksumString, application.Hash)
 	if isEqual {
-		pklog.CreateLog(pklog.Information, "hash "+application.Algorithm+": OK")
+		pklog.CreateLog(pklog.Information, fmt.Sprintf("hash %s: OK", application.Algorithm))
 		pklog.CreateLog(pklog.Information, "downloaded successfully")
 	} else {
-		pklog.CreateLog(pklog.Information, "hash "+application.Algorithm+": FAILED")
+		pklog.CreateLog(pklog.Information, fmt.Sprintf("hash %s: FAILED", application.Algorithm))
 		pklog.CreateLog(pklog.Information, "downloaded unsuccessfully")
 		errr := os.Remove(filePath)
 		if errr != nil {
 			pklog.CreateLog(pklog.Error, errr.Error())
 		}
-		pklog.CreateLog(pklog.Error, filePath+" removed")
+		pklog.CreateLog(pklog.Error, fmt.Sprintf("filePath %s", filePath))
 	}
 }
 
