@@ -1,6 +1,7 @@
 package ioutility
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pezhmankasraee/pklog/v2"
@@ -12,7 +13,7 @@ import (
 func ReadYamlFile(yamlFileLocation string) *model.YamlFile {
 	configfile, err := os.ReadFile(yamlFileLocation)
 	if err != nil {
-		pklog.CreateLog(pklog.FatalError, "yaml file"+yamlFileLocation+" is not accessible")
+		pklog.CreateLog(pklog.FatalError, fmt.Sprintf("yaml file %s is not accessible", yamlFileLocation))
 	}
 
 	return unmarshalYamlFile(configfile)
