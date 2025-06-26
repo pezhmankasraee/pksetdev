@@ -45,7 +45,7 @@ func install(application *model.Application, basePath string) {
 func uncompressFiles(application *model.Application, applicationBasePath string) error {
 	destination := applicationBasePath + "/" + application.Filename
 
-	if strings.HasSuffix(application.Filename, ".tar.gz") {
+	if isTarBallFile(application.Filename) {
 		pklog.CreateLog(pklog.Information, fmt.Sprintf("extracting .tar.gz: %s", destination))
 		if err := ioutility.ExtractTarGz(destination); err != nil {
 			return fmt.Errorf(".tar.gz file: %s", err.Error())
@@ -62,4 +62,9 @@ func uncompressFiles(application *model.Application, applicationBasePath string)
 	}
 
 	return nil
+}
+
+func isTarBallFile(fileName string) bool {
+	return strings.HasSuffix(fileName, ".tar.gz") ||
+		strings.HasSuffix(fileName, ".tgz")
 }
